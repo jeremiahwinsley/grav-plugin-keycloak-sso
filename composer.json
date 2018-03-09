@@ -1,0 +1,9 @@
+{
+    "name": "jeremiahwinsley/keycloak-sso",
+    "type": "project",
+    "license": "MIT",
+    "minimum-stability": "stable",
+    "require": {
+        "jumbojett/openid-connect-php": "^0.4.1"
+    }
+}

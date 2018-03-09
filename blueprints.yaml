@@ -1,0 +1,31 @@
+name: Keycloak Sso
+version: 0.1.0
+description: Allows Grav to authenticate with Keycloak
+icon: plug
+author:
+  name: Jeremiah Winsley
+  email: jeremiah.winsley@gmail.com
+homepage: https://github.com/jeremiahwinsley/grav-plugin-keycloak-sso
+demo: http://demo.yoursite.com
+keywords: grav, plugin, etc
+bugs: https://github.com/jeremiahwinsley/grav-plugin-keycloak-sso/issues
+docs: https://github.com/jeremiahwinsley/grav-plugin-keycloak-sso/blob/develop/README.md
+license: MIT
+
+form:
+  validation: strict
+  fields:
+    enabled:
+      type: toggle
+      label: Plugin status
+      highlight: 1
+      default: 0
+      options:
+        1: Enabled
+        0: Disabled
+      validate:
+        type: bool
+    text_var:
+      type: text
+      label: Text Variable
+      help: Text to add to the top of a page

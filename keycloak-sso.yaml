@@ -1,0 +1,6 @@
+enabled: true
+text_var: Custom Text added by the **Keycloak Sso** plugin (disable plugin to remove)
+
+server:
+client_id:
+client_secret:
