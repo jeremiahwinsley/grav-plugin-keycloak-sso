@@ -1,4 +1,4 @@
-name: Keycloak Sso
+name: Keycloak SSO
 version: 0.1.0
 description: Allows Grav to authenticate with Keycloak
 icon: plug
@@ -12,9 +12,16 @@ bugs: https://github.com/jeremiahwinsley/grav-plugin-keycloak-sso/issues
 docs: https://github.com/jeremiahwinsley/grav-plugin-keycloak-sso/blob/develop/README.md
 license: MIT
 
+dependencies:
+  - { name: login, version: '>=2.5.0' }
+
 form:
   validation: strict
   fields:
+    Settings:
+      type: section
+      title: Settings
+      underline: true
     enabled:
       type: toggle
       label: Plugin status
@@ -25,7 +32,22 @@ form:
         0: Disabled
       validate:
         type: bool
-    text_var:
+    server:
       type: text
-      label: Text Variable
-      help: Text to add to the top of a page
+      label: Keycloak Server
+      placeholder: https://keycloak.test/auth/realms/master
+    client_id:
+      type: text
+      label: Client ID
+      placeholder: grav-sso-client
+      default: grav-sso-client
+    client_secret:
+      type: text
+      label: Client Secret
+    editors:
+      type: selectize
+      size: medium
+      label: Editors
+      classes: fancy
+      validate:
+        type: commalist

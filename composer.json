@@ -4,6 +4,7 @@
     "license": "MIT",
     "minimum-stability": "stable",
     "require": {
-        "jumbojett/openid-connect-php": "^0.4.1"
+        "jumbojett/openid-connect-php": "^0.4.1",
+        "beberlei/assert": "^2.9"
     }
 }

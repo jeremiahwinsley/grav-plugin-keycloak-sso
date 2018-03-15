@@ -1,8 +1,17 @@
 <?php
+
 namespace Grav\Plugin;
 
+use Assert\Assertion;
+use Assert\AssertionFailedException;
+use Grav\Common\Page\Page;
 use Grav\Common\Plugin;
+use Grav\Common\Session;
+use Grav\Common\Uri;
+use Grav\Common\User\User;
+use Grav\Plugin\KeycloakSSO\Controller;
 use Jumbojett\OpenIDConnectClient;
+use Jumbojett\OpenIDConnectClientException;
 use RocketTheme\Toolbox\Event\Event;
 
 /**
@@ -24,50 +33,82 @@ class KeycloakSSOPlugin extends Plugin
     public static function getSubscribedEvents()
     {
         return [
-            'onPluginsInitialized' => ['onPluginsInitialized', 0]
+            'onPluginsInitialized' => ['onPluginsInitialized', 0],
+            'onPageInitialized' => ['onPageInitialized', 0]
         ];
     }
 
     /**
      * Initialize the plugin
+     * @throws OpenIDConnectClientException
      */
     public function onPluginsInitialized()
     {
-        // Don't proceed if we are in the admin plugin
-        if ($this->isAdmin()) {
-            return;
+        // Check to ensure login plugin is enabled.
+        if (!$this->grav['config']->get('plugins.login.enabled')) {
+            throw new \RuntimeException('The Login plugin needs to be installed and enabled');
         }
 
-        // Enable the main event we are interested in
-        $this->enable([
-            'onPageContentRaw' => ['onPageContentRaw', 0]
-        ]);
+        if ($this->grav['config']->get('system.session.split')) {
+            throw new \RuntimeException('Session splitting must be disabled');
+        }
+
+        if ($this->grav['user']->authorize('site.login')) {
+            return;
+        } else {
+            require_once __DIR__ . '/vendor/autoload.php';
+
+            $server = $this->grav['config']->get('plugins.keycloak-sso.server');
+            $client = $this->grav['config']->get('plugins.keycloak-sso.client_id');
+            $secret = $this->grav['config']->get('plugins.keycloak-sso.client_secret');
+            $editors = $this->grav['config']->get('plugins.keycloak-sso.editors') ?? [];
+
+            /** @var Uri $uri */
+            $uri = $this->grav['uri'];
+
+            try {
+                Assertion::notBlank($server);
+                Assertion::notBlank($client);
+                Assertion::notBlank($secret);
+            } catch (AssertionFailedException $e) {
+                if ($this->isAdmin()) {
+                    return;
+                } else {
+                    $this->grav->redirect('/admin');
+                }
+            }
+
+            $oidc   = new OpenIDConnectClient($server, $client, $secret);
+            $oidc->setRedirectURL($uri->base() . '/oidc_login');
+            $oidc->authenticate();
+
+            $userinfo = (array) $oidc->requestUserInfo();
+            $user = User::load($userinfo['preferred_username']);
+            if (!$user->exists()) {
+                $user->set('state', 'enabled');
+                $user->set('email', $userinfo['email']);
+                $user->set('fullname', $userinfo['name']);
+                $user->set('username', $userinfo['preferred_username']);
+                $user->set('authenticated', true);
+                $user->set('access.site.login', true);
+                if (in_array($userinfo['preferred_username'], $editors)) {
+                    $user->set('access.admin.login', true);
+                    $user->set('access.admin.super', true);
+                }
+                $user->save();
+            }
+
+            $this->grav['session']->user = $user;
+            unset($this->grav['user']);
+            $this->grav['user'] = $user;
+        }
     }
 
-    public function oidAuthenticate()
+    public function onPageInitialized()
     {
-        $server = $this->grav['config']->get('plugins.keycloak-sso.server');
-        $client = $this->grav['config']->get('plugins.keycloak-sso.client_id');
-        $secret = $this->grav['config']->get('plugins.keycloak-sso.client_secret');
-        $oidc = new OpenIDConnectClient($server, $client, $secret);
-        $oidc->authenticate();
-    }
-
-    /**
-     * Do some work for this event, full details of events can be found
-     * on the learn site: http://learn.getgrav.org/plugins/event-hooks
-     *
-     * @param Event $e
-     */
-    public function onPageContentRaw(Event $e)
-    {
-        // Get a variable from the plugin configuration
-        $text = $this->grav['config']->get('plugins.keycloak-sso.text_var');
-
-        // Get the current raw content
-        $content = $e['page']->getRawContent();
-
-        // Prepend the output with the custom text and set back on the page
-        $e['page']->setRawContent($text . "\n\n" . $content);
+        $uri = $this->grav['uri'];
+        if ($uri->path() == '/oidc_login') {
+            $this->grav->redirect('/', 302);
+        }
     }
 }
