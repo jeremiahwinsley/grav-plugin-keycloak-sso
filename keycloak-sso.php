@@ -41,6 +41,7 @@ class KeycloakSSOPlugin extends Plugin
     /**
      * Initialize the plugin
      * @throws OpenIDConnectClientException
+     * @SuppressWarnings(PHPMD.Superglobals)
      */
     public function onPluginsInitialized()
     {
@@ -79,7 +80,14 @@ class KeycloakSSOPlugin extends Plugin
             }
 
             $oidc   = new OpenIDConnectClient($server, $client, $secret);
-            $oidc->setRedirectURL($uri->base() . '/oidc_login');
+
+            $redirect = $uri->base() . '/oidc_login';
+            if ($this->grav['config']->get('system.reverse_proxy_setup') === true
+                && isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+                $redirect = str_replace('http://', 'https://', $redirect);
+            }
+
+            $oidc->setRedirectURL($redirect);
             $oidc->authenticate();
 
             $userinfo = (array) $oidc->requestUserInfo();
