@@ -122,7 +122,7 @@ class KeycloakSSOPlugin extends Plugin
     {
         $uri = $this->grav['uri'];
         if ($uri->path() == '/oidc_login') {
-            $redirect = $this->grav['session']->getFlashObject('login_redirect');
+            $redirect = $this->grav['session']->getFlashObject('login_redirect') ?? '/';
             $this->grav->redirect($redirect, 302);
         }
     }
