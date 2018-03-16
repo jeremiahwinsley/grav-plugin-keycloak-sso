@@ -90,6 +90,9 @@ class KeycloakSSOPlugin extends Plugin
             $oidc->setRedirectURL($redirect);
             $oidc->authenticate();
 
+            /** @var Session $session */
+            $session = $session = $this->grav['session'];
+
             $userinfo = (array) $oidc->requestUserInfo();
             $user = User::load($userinfo['preferred_username']);
             if (!$user->exists()) {
@@ -102,6 +105,9 @@ class KeycloakSSOPlugin extends Plugin
                 if (in_array($userinfo['preferred_username'], $editors)) {
                     $user->set('access.admin.login', true);
                     $user->set('access.admin.super', true);
+                    $session->setFlashObject('login_redirect', '/admin');
+                } else {
+                    $session->setFlashObject('login_redirect', '/');
                 }
                 $user->save();
             }
@@ -116,7 +122,8 @@ class KeycloakSSOPlugin extends Plugin
     {
         $uri = $this->grav['uri'];
         if ($uri->path() == '/oidc_login') {
-            $this->grav->redirect('/', 302);
+            $redirect = $this->grav['session']->getFlashObject('login_redirect');
+            $this->grav->redirect($redirect, 302);
         }
     }
 }
