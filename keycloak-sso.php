@@ -54,6 +54,13 @@ class KeycloakSSOPlugin extends Plugin
             throw new \RuntimeException('Session splitting must be disabled');
         }
 
+        /** @var Uri $uri */
+        $uri = $this->grav['uri'];
+        if ($uri->path() === '/_git-sync') {
+            return;
+        }
+
+
         if ($this->grav['user']->authorize('site.login')) {
             return;
         } else {
@@ -63,9 +70,6 @@ class KeycloakSSOPlugin extends Plugin
             $client = $this->grav['config']->get('plugins.keycloak-sso.client_id');
             $secret = $this->grav['config']->get('plugins.keycloak-sso.client_secret');
             $editors = $this->grav['config']->get('plugins.keycloak-sso.editors') ?? [];
-
-            /** @var Uri $uri */
-            $uri = $this->grav['uri'];
 
             try {
                 Assertion::notBlank($server);
